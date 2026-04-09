@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>استوديو التأليف</title>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root { --primary-color: #8c1c1c; }
+        body { font-family: 'Tajawal', sans-serif; margin:0; padding:0; background:#fdfbf7; color:#333; }
+        
+        #app-header { width:100%; height:420px; background-size:cover; background-position:center; position:relative; display:flex; align-items:flex-end; box-shadow:0 4px 15px rgba(0,0,0,0.25); }
+        .overlay { position:absolute; inset:0; background:linear-gradient(to top, rgba(0,0,0,0.7), transparent); }
+        
+        .header-content { position:relative; z-index:2; padding:25px 30px; width:100%; display:flex; justify-content:space-between; align-items:center; }
+        h1 { color:white; font-size:2.9rem; text-shadow:3px 3px 10px rgba(0,0,0,0.8); margin:0; }
+
+        .upload-wrapper { background:rgba(255,255,255,0.95); color:#222; padding:10px 18px; border-radius:50px; display:flex; align-items:center; gap:12px; box-shadow:0 5px 15px rgba(0,0,0,0.3); cursor:pointer; font-weight:600; }
+        .upload-wrapper img { width:48px; height:48px; border-radius:10px; object-fit:cover; }
+
+        .bottom-buttons { position:absolute; bottom:45px; left:50%; transform:translateX(-50%); display:flex; gap:18px; z-index:10; }
+        .big-btn { background:#8c1c1c; color:white; border:none; padding:20px 42px; font-size:1.45rem; border-radius:18px; box-shadow:0 10px 25px rgba(140,28,28,0.45); display:flex; align-items:center; gap:12px; white-space:nowrap; font-weight:700; }
+        .big-btn:hover { transform:scale(1.06); }
+
+        .modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.75); z-index:1000; align-items:center; justify-content:center; }
+        .modal-content { background:white; width:92%; max-width:500px; border-radius:22px; padding:30px; box-shadow:0 15px 40px rgba(0,0,0,0.3); }
+
+        /* Editor */
+        .editor-container { max-width:920px; margin:40px auto; padding:0 20px; display:none; }
+        .toolbar { background:#fff; padding:10px; border-radius:12px; box-shadow:0 4px 15px rgba(0,0,0,0.1); margin-bottom:15px; display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+        .tool-btn { padding:8px 14px; border:none; background:#f0f0f0; border-radius:8px; cursor:pointer; font-size:1.1rem; }
+        .tool-btn:hover { background:#e0e0e0; }
+        .title-area { font-size:2.2rem; font-weight:700; text-align:center; color:var(--primary-color); margin-bottom:15px; padding:10px; border:none; background:transparent; width:100%; outline:none; border-bottom:2px solid #eee; }
+        .content-area { width:100%; min-height:55vh; padding:25px; font-size:1.55rem; line-height:1.9; border:1px solid #ddd; border-radius:16px; background:white; box-shadow:0 4px 15px rgba(0,0,0,0.08); outline:none; overflow-y:auto; }
+        .status-bar { text-align:left; margin-top:12px; font-size:1rem; color:#555; }
+
+        .library-modal .modal-content { max-width:720px; }
+    </style>
+</head>
+<body>
+
+    <header id="app-header">
+        <div class="overlay"></div>
+        <div class="header-content">
+            <h1>استوديو التأليف</h1>
+            <label class="upload-wrapper" id="uploadLabel">
+                <img id="thumb" src="" alt="" style="display:none;">
+                <span>تغيير صورة الخلفية</span>
+                <input type="file" id="imageUpload" accept="image/*" hidden>
+            </label>
+        </div>
+
+        <div class="bottom-buttons">
+            <button id="libraryBtn" class="big-btn">📚 مكتبتي</button>
+            <button id="startBtn" class="big-btn">ابدأ تأليف جديد</button>
+        </div>
+    </header>
+
+    <!-- Modal 1: نوع التأليف -->
+    <div id="typeModal" class="modal">
+        <div class="modal-content">
+            <h2 style="text-align:center; color:#8c1c1c; margin-bottom:25px;">اختر نوع التأليف</h2>
+            <div data-type="song" class="type-option" style="padding:18px; margin:12px 0; border:2px solid #eee; border-radius:14px; font-size:1.4rem; cursor:pointer; display:flex; align-items:center; gap:15px;">🎵 <span>أغنية</span></div>
+            <div data-type="play" class="type-option" style="padding:18px; margin:12px 0; border:2px solid #eee; border-radius:14px; font-size:1.4rem; cursor:pointer; display:flex; align-items:center; gap:15px;">🎭 <span>مسرحية</span></div>
+            <div data-type="other" class="type-option" style="padding:18px; margin:12px 0; border:2px solid #eee; border-radius:14px; font-size:1.4rem; cursor:pointer; display:flex; align-items:center; gap:15px;">✍️ <span>نص حر / آخر</span></div>
+            <button id="closeTypeModal" style="margin-top:20px; background:none; border:none; color:#888; font-size:1.1rem; cursor:pointer; width:100%;">إغلاق</button>
+        </div>
+    </div>
+
+    <!-- Modal 2: اختيار المشروع -->
+    <div id="projectModal" class="modal">
+        <div class="modal-content">
+            <h2 id="projectModalTitle" style="text-align:center; color:#8c1c1c; margin-bottom:25px;">اختر المشروع</h2>
+            <select id="projectSelect" style="width:100%; padding:14px; border-radius:12px; border:1px solid #ddd; font-size:1.2rem; margin-bottom:15px;"></select>
+            
+            <div id="newProjectGroup" style="display:none; margin-bottom:20px;">
+                <input type="text" id="newProjectName" placeholder="اسم المشروع الجديد" style="width:100%; padding:14px; border-radius:12px; border:1px solid #ddd; font-size:1.2rem;">
+            </div>
+
+            <button id="confirmProjectBtn" style="width:100%; background:#8c1c1c; color:white; padding:16px; border:none; border-radius:14px; font-size:1.3rem; font-weight:700;">تأكيد والبدء</button>
+            <button id="cancelProjectBtn" style="margin-top:15px; background:none; border:none; color:#888; width:100%;">إلغاء</button>
+        </div>
+    </div>
+
+    <!-- المحرر -->
+    <div id="editorContainer" class="editor-container">
+        <input id="editableTitle" class="title-area" placeholder="اسم الأغنية / العمل" value="عنوان جديد">
+
+        <div class="toolbar">
+            <button class="tool-btn" onclick="execCmd('bold')">𝐁</button>
+            <button class="tool-btn" onclick="execCmd('italic')">𝐼</button>
+            <button class="tool-btn" onclick="execCmd('underline')">𝐔</button>
+            <button class="tool-btn" onclick="execCmd('insertUnorderedList')">•</button>
+            
+            <!-- أزرار المقاطع الموسيقية -->
+            <button class="tool-btn" onclick="insertSection('🔥 الكورس')">🔥 كورس</button>
+            <button class="tool-btn" onclick="insertSection('✨ البيت 1')">✨ بيت 1</button>
+            <button class="tool-btn" onclick="insertSection('🌟 البيت 2')">🌟 بيت 2</button>
+            <button class="tool-btn" onclick="insertSection('🎸 البريدج')">🎸 بريدج</button>
+            <button class="tool-btn" onclick="insertSection('🎤 المقدمة')">🎤 مقدمة</button>
+            <button class="tool-btn" onclick="insertSection('🏁 النهاية')">🏁 نهاية</button>
+        </div>
+
+        <div id="contentArea" contenteditable="true" class="content-area" style="direction:rtl;"></div>
+        
+        <div class="status-bar" id="saveStatus">تم الحفظ تلقائياً ✓</div>
+        
+        <div style="text-align:center; margin-top:20px;">
+            <button id="completeBtn" style="background:#28a745; color:white; border:none; padding:14px 30px; border-radius:12px; font-size:1.2rem;">✅ إنهاء التأليف ونقل إلى المشروع</button>
+            <button id="backToHomeBtn" style="background:#666; color:white; border:none; padding:14px 30px; border-radius:12px; font-size:1.2rem; margin-right:10px;">رجوع</button>
+        </div>
+    </div>
+
+    <!-- مكتبة -->
+    <div id="libraryModal" class="modal library-modal">
+        <div class="modal-content">
+            <h2 style="text-align:center; margin-bottom:25px;">📚 مكتبتي</h2>
+            <div id="libraryContent" style="max-height:70vh; overflow-y:auto;"></div>
+            <button id="closeLibraryBtn" style="width:100%; padding:14px; background:#eee; border:none; border-radius:12px; font-size:1.1rem; margin-top:20px;">إغلاق</button>
+        </div>
+    </div>
+
+    <script>
+        let creations = JSON.parse(localStorage.getItem('creations')) || [];
+        let currentId = null;
+
+        // رفع الصورة
+        const appHeader = document.getElementById('app-header');
+        const thumb = document.getElementById('thumb');
+        const imageUpload = document.getElementById('imageUpload');
+        const savedImage = localStorage.getItem('headerImage');
+        if (savedImage) {
+            appHeader.style.backgroundImage = `url(${savedImage})`;
+            thumb.src = savedImage; thumb.style.display = 'block';
+        }
+        imageUpload.addEventListener('change', e => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = ev => {
+                    appHeader.style.backgroundImage = `url(${ev.target.result})`;
+                    localStorage.setItem('headerImage', ev.target.result);
+                    thumb.src = ev.target.result; thumb.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        function saveAll() { localStorage.setItem('creations', JSON.stringify(creations)); }
+
+        function execCmd(command) {
+            document.execCommand(command, false, null);
+            document.getElementById('contentArea').focus();
+            autoSave();
+        }
+
+        function insertSection(text) {
+            const area = document.getElementById('contentArea');
+            area.focus();
+            const selection = window.getSelection();
+            const range = selection.getRangeAt(0);
+            const div = document.createElement('div');
+            div.innerHTML = `<h2 style="color:#8c1c1c; text-align:center; margin:25px 0 10px;">${text}</h2><br>`;
+            range.deleteContents();
+            range.insertNode(div);
+            autoSave();
+        }
+
+        function autoSave() {
+            if (!currentId) return;
+            const creation = creations.find(c => c.id === currentId);
+            if (creation) {
+                creation.title = document.getElementById('editableTitle').value.trim() || 'بدون عنوان';
+                creation.content = document.getElementById('contentArea').innerHTML;
+                saveAll();
+                
+                const status = document.getElementById('saveStatus');
+                status.textContent = 'جاري الحفظ...';
+                clearTimeout(window.saveTimer);
+                window.saveTimer = setTimeout(() => status.textContent = 'تم الحفظ تلقائياً ✓', 800);
+            }
+        }
+
+        // فتح نوع التأليف
+        document.getElementById('startBtn').addEventListener('click', () => document.getElementById('typeModal').style.display = 'flex');
+
+        document.querySelectorAll('.type-option').forEach(el => {
+            el.addEventListener('click', () => {
+                document.getElementById('typeModal').style.display = 'none';
+                const type = el.dataset.type;
+                document.getElementById('projectModalTitle').textContent = `اختر مشروع لـ ${type === 'song' ? 'الأغنية' : type === 'play' ? 'المسرحية' : 'النص الحر'}`;
+                
+                // ملء قائمة المشاريع
+                const select = document.getElementById('projectSelect');
+                select.innerHTML = '<option value="">اختر مشروع...</option>';
+                const projects = [...new Set(creations.map(c => c.project))];
+                projects.forEach(p => {
+                    const opt = document.createElement('option');
+                    opt.value = p; opt.textContent = p;
+                    select.appendChild(opt);
+                });
+                const newOpt = document.createElement('option');
+                newOpt.value = 'new'; newOpt.textContent = '➕ مشروع جديد';
+                select.appendChild(newOpt);
+
+                document.getElementById('projectModal').style.display = 'flex';
+                document.getElementById('newProjectGroup').style.display = 'none';
+                window.currentType = type;
+            });
+        });
+
+        document.getElementById('closeTypeModal').addEventListener('click', () => document.getElementById('typeModal').style.display = 'none');
+
+        // مشروع
+        document.getElementById('projectSelect').addEventListener('change', function() {
+            document.getElementById('newProjectGroup').style.display = this.value === 'new' ? 'block' : 'none';
+        });
+
+        document.getElementById('confirmProjectBtn').addEventListener('click', () => {
+            let project = document.getElementById('projectSelect').value;
+            if (project === 'new') project = document.getElementById('newProjectName').value.trim();
+            if (!project) return alert('يلزم اختيار أو إنشاء مشروع');
+
+            const newCreation = {
+                id: Date.now().toString(),
+                type: window.currentType,
+                project: project,
+                title: 'عنوان جديد',
+                content: '',
+                status: 'draft',
+                createdAt: new Date().toISOString()
+            };
+
+            creations.unshift(newCreation);
+            saveAll();
+            document.getElementById('projectModal').style.display = 'none';
+            openEditor(newCreation);
+        });
+
+        document.getElementById('cancelProjectBtn').addEventListener('click', () => document.getElementById('projectModal').style.display = 'none');
+
+        function openEditor(creation) {
+            currentId = creation.id;
+            document.getElementById('editorContainer').style.display = 'block';
+            document.getElementById('editableTitle').value = creation.title;
+            document.getElementById('contentArea').innerHTML = creation.content || '';
+
+            // حفظ تلقائي
+            const titleInput = document.getElementById('editableTitle');
+            const contentArea = document.getElementById('contentArea');
+            
+            titleInput.oninput = autoSave;
+            contentArea.oninput = autoSave;
+            contentArea.onkeyup = autoSave;
+        }
+
+        document.getElementById('completeBtn').addEventListener('click', () => {
+            if (currentId) {
+                const item = creations.find(c => c.id === currentId);
+                if (item) item.status = 'completed';
+                saveAll();
+                alert('✅ تم إنهاء التأليف بنجاح!');
+                document.getElementById('editorContainer').style.display = 'none';
+                currentId = null;
+            }
+        });
+
+        document.getElementById('backToHomeBtn').addEventListener('click', () => {
+            document.getElementById('editorContainer').style.display = 'none';
+            currentId = null;
+        });
+
+        // مكتبتي (بسيطة حالياً)
+        document.getElementById('libraryBtn').addEventListener('click', () => {
+            const container = document.getElementById('libraryContent');
+            container.innerHTML = '<p style="text-align:center; padding:40px; color:#666;">مكتبتي قيد التطوير المتقدم... سيتم عرض كل المشاريع والأعمال هنا قريباً</p>';
+            document.getElementById('libraryModal').style.display = 'flex';
+        });
+
+        document.getElementById('closeLibraryBtn').addEventListener('click', () => document.getElementById('libraryModal').style.display = 'none');
+    </script>
+</body>
+</html>
