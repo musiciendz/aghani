@@ -3,24 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>استوديو التأليف</title>
+    <title>استوديو التأليف - السحابي (Firebase)</title>
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+    
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
     <style>
         :root { --primary-color: #8c1c1c; }
         body { font-family: 'Tajawal', sans-serif; margin:0; padding:0; background:#fdfbf7; color:#333; }
         
-        #app-header { width:100%; height:420px; background-size:cover; background-position:center; position:relative; display:flex; align-items:flex-end; box-shadow:0 4px 15px rgba(0,0,0,0.25); }
+        #app-header { width:100%; height:420px; background-size:cover; background-position:center; position:relative; display:flex; align-items:flex-end; box-shadow:0 4px 15px rgba(0,0,0,0.25); background-color: #222;}
         .overlay { position:absolute; inset:0; background:linear-gradient(to top, rgba(0,0,0,0.7), transparent); }
         
         .header-content { position:relative; z-index:2; padding:25px 30px; width:100%; display:flex; justify-content:space-between; align-items:center; }
         h1 { color:white; font-size:2.9rem; text-shadow:3px 3px 10px rgba(0,0,0,0.8); margin:0; }
 
-        .upload-wrapper { background:rgba(255,255,255,0.95); color:#222; padding:10px 18px; border-radius:50px; display:flex; align-items:center; gap:12px; box-shadow:0 5px 15px rgba(0,0,0,0.3); cursor:pointer; font-weight:600; }
+        .upload-wrapper { background:rgba(255,255,255,0.95); color:#222; padding:10px 18px; border-radius:50px; display:flex; align-items:center; gap:12px; box-shadow:0 5px 15px rgba(0,0,0,0.3); cursor:pointer; font-weight:600; transition: 0.3s; }
+        .upload-wrapper:hover { background: white; transform: scale(1.02); }
         .upload-wrapper img { width:48px; height:48px; border-radius:10px; object-fit:cover; }
 
         .bottom-buttons { position:absolute; bottom:45px; left:50%; transform:translateX(-50%); display:flex; gap:18px; z-index:10; }
-        .big-btn { background:#8c1c1c; color:white; border:none; padding:20px 42px; font-size:1.45rem; border-radius:18px; box-shadow:0 10px 25px rgba(140,28,28,0.45); display:flex; align-items:center; gap:12px; white-space:nowrap; font-weight:700; }
-        .big-btn:hover { transform:scale(1.06); }
+        .big-btn { background:#8c1c1c; color:white; border:none; padding:20px 42px; font-size:1.45rem; border-radius:18px; box-shadow:0 10px 25px rgba(140,28,28,0.45); display:flex; align-items:center; gap:12px; white-space:nowrap; font-weight:700; cursor: pointer; transition: 0.3s;}
+        .big-btn:hover { transform:scale(1.06); background: #a62222; }
 
         .modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.75); z-index:1000; align-items:center; justify-content:center; }
         .modal-content { background:white; width:92%; max-width:500px; border-radius:22px; padding:30px; box-shadow:0 15px 40px rgba(0,0,0,0.3); }
@@ -28,16 +33,35 @@
         /* Editor */
         .editor-container { max-width:920px; margin:40px auto; padding:0 20px; display:none; }
         .toolbar { background:#fff; padding:10px; border-radius:12px; box-shadow:0 4px 15px rgba(0,0,0,0.1); margin-bottom:15px; display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
-        .tool-btn { padding:8px 14px; border:none; background:#f0f0f0; border-radius:8px; cursor:pointer; font-size:1.1rem; }
+        .tool-btn { padding:8px 14px; border:none; background:#f0f0f0; border-radius:8px; cursor:pointer; font-size:1.1rem; transition: 0.2s;}
         .tool-btn:hover { background:#e0e0e0; }
         .title-area { font-size:2.2rem; font-weight:700; text-align:center; color:var(--primary-color); margin-bottom:15px; padding:10px; border:none; background:transparent; width:100%; outline:none; border-bottom:2px solid #eee; }
-        .content-area { width:100%; min-height:55vh; padding:25px; font-size:1.55rem; line-height:1.9; border:1px solid #ddd; border-radius:16px; background:white; box-shadow:0 4px 15px rgba(0,0,0,0.08); outline:none; overflow-y:auto; }
-        .status-bar { text-align:left; margin-top:12px; font-size:1rem; color:#555; }
+        .content-area { width:100%; min-height:55vh; padding:25px; font-size:1.55rem; line-height:1.9; border:1px solid #ddd; border-radius:16px; background:white; box-shadow:0 4px 15px rgba(0,0,0,0.08); outline:none; overflow-y:auto; box-sizing: border-box;}
+        
+        .status-bar { display: flex; justify-content: space-between; margin-top:12px; font-size:1rem; color:#555; padding: 0 10px;}
+        .word-count { font-weight: bold; color: #8c1c1c; }
 
-        .library-modal .modal-content { max-width:720px; }
+        /* Library Styles */
+        .library-modal .modal-content { max-width:720px; padding: 20px; }
+        .lib-card { background: #fdfdfd; border: 2px solid #eee; padding: 15px; border-radius: 12px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; transition: 0.2s; }
+        .lib-card:hover { border-color: var(--primary-color); box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+        .lib-info h3 { margin: 0 0 5px 0; color: var(--primary-color); font-size: 1.4rem; }
+        .lib-info p { margin: 0; color: #666; font-size: 1rem; }
+        .lib-badge { display: inline-block; background: #eee; padding: 3px 8px; border-radius: 6px; font-size: 0.85rem; margin-top: 5px; font-weight: bold;}
+        .lib-actions button { padding: 10px 15px; border: none; border-radius: 8px; cursor: pointer; font-family: 'Tajawal'; font-weight: bold; font-size: 1rem; transition: 0.2s;}
+        .btn-open { background: #28a745; color: white; margin-left: 8px; }
+        .btn-open:hover { background: #218838; }
+        .btn-delete { background: #dc3545; color: white; }
+        .btn-delete:hover { background: #c82333; }
+        .empty-lib { text-align: center; padding: 40px; color: #888; font-size: 1.2rem; }
+        
+        /* علامة الاتصال */
+        #connectionStatus { position: fixed; top: 10px; right: 10px; background: #28a745; color: white; padding: 5px 10px; border-radius: 20px; font-size: 0.9rem; z-index: 9999; font-weight: bold; display: none; box-shadow: 0 2px 5px rgba(0,0,0,0.2);}
     </style>
 </head>
 <body>
+
+    <div id="connectionStatus">🟢 متصل بالسحابة</div>
 
     <header id="app-header">
         <div class="overlay"></div>
@@ -56,7 +80,6 @@
         </div>
     </header>
 
-    <!-- Modal 1: نوع التأليف -->
     <div id="typeModal" class="modal">
         <div class="modal-content">
             <h2 style="text-align:center; color:#8c1c1c; margin-bottom:25px;">اختر نوع التأليف</h2>
@@ -67,32 +90,29 @@
         </div>
     </div>
 
-    <!-- Modal 2: اختيار المشروع -->
     <div id="projectModal" class="modal">
         <div class="modal-content">
             <h2 id="projectModalTitle" style="text-align:center; color:#8c1c1c; margin-bottom:25px;">اختر المشروع</h2>
-            <select id="projectSelect" style="width:100%; padding:14px; border-radius:12px; border:1px solid #ddd; font-size:1.2rem; margin-bottom:15px;"></select>
+            <select id="projectSelect" style="width:100%; padding:14px; border-radius:12px; border:1px solid #ddd; font-size:1.2rem; margin-bottom:15px; font-family: 'Tajawal';"></select>
             
             <div id="newProjectGroup" style="display:none; margin-bottom:20px;">
-                <input type="text" id="newProjectName" placeholder="اسم المشروع الجديد" style="width:100%; padding:14px; border-radius:12px; border:1px solid #ddd; font-size:1.2rem;">
+                <input type="text" id="newProjectName" placeholder="اسم المشروع الجديد" style="width:100%; padding:14px; border-radius:12px; border:1px solid #ddd; font-size:1.2rem; font-family: 'Tajawal'; box-sizing: border-box;">
             </div>
 
-            <button id="confirmProjectBtn" style="width:100%; background:#8c1c1c; color:white; padding:16px; border:none; border-radius:14px; font-size:1.3rem; font-weight:700;">تأكيد والبدء</button>
-            <button id="cancelProjectBtn" style="margin-top:15px; background:none; border:none; color:#888; width:100%;">إلغاء</button>
+            <button id="confirmProjectBtn" style="width:100%; background:#8c1c1c; color:white; padding:16px; border:none; border-radius:14px; font-size:1.3rem; font-weight:700; cursor: pointer;">تأكيد والبدء</button>
+            <button id="cancelProjectBtn" style="margin-top:15px; background:none; border:none; color:#888; width:100%; cursor: pointer;">إلغاء</button>
         </div>
     </div>
 
-    <!-- المحرر -->
     <div id="editorContainer" class="editor-container">
         <input id="editableTitle" class="title-area" placeholder="اسم الأغنية / العمل" value="عنوان جديد">
 
         <div class="toolbar">
-            <button class="tool-btn" onclick="execCmd('bold')">𝐁</button>
-            <button class="tool-btn" onclick="execCmd('italic')">𝐼</button>
-            <button class="tool-btn" onclick="execCmd('underline')">𝐔</button>
-            <button class="tool-btn" onclick="execCmd('insertUnorderedList')">•</button>
-            
-            <!-- أزرار المقاطع الموسيقية -->
+            <button class="tool-btn" onclick="execCmd('bold')" title="خط عريض">𝐁</button>
+            <button class="tool-btn" onclick="execCmd('italic')" title="مائل">𝐼</button>
+            <button class="tool-btn" onclick="execCmd('underline')" title="تسطير">𝐔</button>
+            <button class="tool-btn" onclick="execCmd('insertUnorderedList')" title="قائمة نقطية">•</button>
+            <span style="color: #ccc;">|</span>
             <button class="tool-btn" onclick="insertSection('🔥 الكورس')">🔥 كورس</button>
             <button class="tool-btn" onclick="insertSection('✨ البيت 1')">✨ بيت 1</button>
             <button class="tool-btn" onclick="insertSection('🌟 البيت 2')">🌟 بيت 2</button>
@@ -103,28 +123,98 @@
 
         <div id="contentArea" contenteditable="true" class="content-area" style="direction:rtl;"></div>
         
-        <div class="status-bar" id="saveStatus">تم الحفظ تلقائياً ✓</div>
+        <div class="status-bar">
+            <span id="saveStatus">جاهز للكتابة ☁️</span>
+            <span class="word-count" id="wordCount">0 كلمات</span>
+        </div>
         
-        <div style="text-align:center; margin-top:20px;">
-            <button id="completeBtn" style="background:#28a745; color:white; border:none; padding:14px 30px; border-radius:12px; font-size:1.2rem;">✅ إنهاء التأليف ونقل إلى المشروع</button>
-            <button id="backToHomeBtn" style="background:#666; color:white; border:none; padding:14px 30px; border-radius:12px; font-size:1.2rem; margin-right:10px;">رجوع</button>
+        <div style="text-align:center; margin-top:25px; display: flex; justify-content: center; gap: 10px; flex-wrap: wrap;">
+            <button id="completeBtn" style="background:#28a745; color:white; border:none; padding:14px 30px; border-radius:12px; font-size:1.2rem; cursor: pointer; font-family: 'Tajawal'; font-weight: bold;">✅ إنهاء وحفظ بالسحابة</button>
+            <button id="exportBtn" style="background:#007bff; color:white; border:none; padding:14px 30px; border-radius:12px; font-size:1.2rem; cursor: pointer; font-family: 'Tajawal'; font-weight: bold;">📥 تحميل كملف نصي</button>
+            <button id="backToHomeBtn" style="background:#666; color:white; border:none; padding:14px 30px; border-radius:12px; font-size:1.2rem; cursor: pointer; font-family: 'Tajawal';">رجوع للرئيسية</button>
         </div>
     </div>
 
-    <!-- مكتبة -->
     <div id="libraryModal" class="modal library-modal">
         <div class="modal-content">
-            <h2 style="text-align:center; margin-bottom:25px;">📚 مكتبتي</h2>
-            <div id="libraryContent" style="max-height:70vh; overflow-y:auto;"></div>
-            <button id="closeLibraryBtn" style="width:100%; padding:14px; background:#eee; border:none; border-radius:12px; font-size:1.1rem; margin-top:20px;">إغلاق</button>
+            <h2 style="text-align:center; margin-bottom:25px; color: var(--primary-color);">☁️ مكتبتي السحابية</h2>
+            <div id="libraryContent" style="max-height:60vh; overflow-y:auto; padding-right: 5px;"></div>
+            <button id="closeLibraryBtn" style="width:100%; padding:14px; background:#eee; border:none; border-radius:12px; font-size:1.1rem; margin-top:20px; cursor: pointer; font-family: 'Tajawal'; font-weight: bold;">إغلاق المكتبة</button>
         </div>
     </div>
 
     <script>
-        let creations = JSON.parse(localStorage.getItem('creations')) || [];
+        // ==========================================
+        // 1. إعدادات Firebase
+        // ==========================================
+        // ⚠️ استبدل هذه الإعدادات بمعلومات مشروعك في Firebase
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+            databaseURL: "https://YOUR_PROJECT_ID-default-rtdb.firebaseio.com",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_PROJECT_ID.appspot.com",
+            messagingSenderId: "YOUR_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+
+        // تهيئة فايربيس
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        const db = firebase.database();
+
+        // ==========================================
+        // 2. المتغيرات والدوال الأساسية
+        // ==========================================
+        let creations = []; // المصفوفة الأساسية التي ستمتلئ من قاعدة البيانات
         let currentId = null;
 
-        // رفع الصورة
+        // الاستماع لاتصال قاعدة البيانات لتحديث الواجهة
+        db.ref('.info/connected').on('value', function(snap) {
+            const statusBadge = document.getElementById('connectionStatus');
+            if (snap.val() === true) {
+                statusBadge.style.display = 'block';
+                statusBadge.innerText = '🟢 متصل بالسحابة';
+                statusBadge.style.background = '#28a745';
+                setTimeout(() => statusBadge.style.display = 'none', 3000);
+            } else {
+                statusBadge.style.display = 'block';
+                statusBadge.innerText = '🔴 غير متصل';
+                statusBadge.style.background = '#dc3545';
+            }
+        });
+
+        // جلب البيانات من فايربيس وتحديث المكتبة
+        db.ref('authorStudioCreations').on('value', (snapshot) => {
+            const data = snapshot.val();
+            creations = [];
+            if (data) {
+                for (let key in data) {
+                    creations.push(data[key]);
+                }
+                // ترتيب الأعمال من الأحدث للأقدم بناءً على ID
+                creations.sort((a, b) => b.id - a.id);
+            }
+            
+            // تحديث المكتبة إذا كانت مفتوحة
+            if(document.getElementById('libraryModal').style.display === 'flex') {
+                renderLibrary();
+            }
+        });
+
+        // دوال الحفظ والحذف في فايربيس
+        function saveToFirebase(creation) {
+            db.ref('authorStudioCreations/' + creation.id).set(creation);
+        }
+
+        function deleteFromFirebase(id) {
+            db.ref('authorStudioCreations/' + id).remove();
+        }
+
+        // ==========================================
+        // 3. صورة الخلفية (تبقى LocalStorage لحجمها الكبير)
+        // ==========================================
         const appHeader = document.getElementById('app-header');
         const thumb = document.getElementById('thumb');
         const imageUpload = document.getElementById('imageUpload');
@@ -146,8 +236,9 @@
             }
         });
 
-        function saveAll() { localStorage.setItem('creations', JSON.stringify(creations)); }
-
+        // ==========================================
+        // 4. المحرر والحفظ التلقائي
+        // ==========================================
         function execCmd(command) {
             document.execCommand(command, false, null);
             document.getElementById('contentArea').focus();
@@ -160,10 +251,20 @@
             const selection = window.getSelection();
             const range = selection.getRangeAt(0);
             const div = document.createElement('div');
-            div.innerHTML = `<h2 style="color:#8c1c1c; text-align:center; margin:25px 0 10px;">${text}</h2><br>`;
+            div.innerHTML = `<h2 style="color:#8c1c1c; text-align:center; margin:25px 0 10px;">${text}</h2><div><br></div>`;
             range.deleteContents();
             range.insertNode(div);
+            range.setStartAfter(div);
+            range.setEndAfter(div);
+            selection.removeAllRanges();
+            selection.addRange(range);
             autoSave();
+        }
+
+        function updateWordCount() {
+            const text = document.getElementById('contentArea').innerText.trim();
+            const words = text ? text.split(/\s+/).length : 0;
+            document.getElementById('wordCount').textContent = `${words} كلمات`;
         }
 
         function autoSave() {
@@ -172,35 +273,45 @@
             if (creation) {
                 creation.title = document.getElementById('editableTitle').value.trim() || 'بدون عنوان';
                 creation.content = document.getElementById('contentArea').innerHTML;
-                saveAll();
                 
+                // حفظ للفايربيس
+                saveToFirebase(creation);
+                
+                updateWordCount();
+
                 const status = document.getElementById('saveStatus');
-                status.textContent = 'جاري الحفظ...';
+                status.textContent = 'جاري الحفظ بالسحابة... ☁️';
                 clearTimeout(window.saveTimer);
                 window.saveTimer = setTimeout(() => status.textContent = 'تم الحفظ تلقائياً ✓', 800);
             }
         }
 
-        // فتح نوع التأليف
-        document.getElementById('startBtn').addEventListener('click', () => document.getElementById('typeModal').style.display = 'flex');
+        // ==========================================
+        // 5. النوافذ واختيار المشاريع
+        // ==========================================
+        document.getElementById('startBtn').addEventListener('click', () => {
+            document.getElementById('app-header').style.display = 'flex';
+            document.getElementById('editorContainer').style.display = 'none';
+            document.getElementById('typeModal').style.display = 'flex';
+        });
 
         document.querySelectorAll('.type-option').forEach(el => {
             el.addEventListener('click', () => {
                 document.getElementById('typeModal').style.display = 'none';
                 const type = el.dataset.type;
-                document.getElementById('projectModalTitle').textContent = `اختر مشروع لـ ${type === 'song' ? 'الأغنية' : type === 'play' ? 'المسرحية' : 'النص الحر'}`;
+                const typeName = type === 'song' ? 'الأغنية' : type === 'play' ? 'المسرحية' : 'النص الحر';
+                document.getElementById('projectModalTitle').textContent = `اختر مشروع لـ ${typeName}`;
                 
-                // ملء قائمة المشاريع
                 const select = document.getElementById('projectSelect');
                 select.innerHTML = '<option value="">اختر مشروع...</option>';
                 const projects = [...new Set(creations.map(c => c.project))];
                 projects.forEach(p => {
                     const opt = document.createElement('option');
-                    opt.value = p; opt.textContent = p;
+                    opt.value = p; opt.textContent = `📁 ${p}`;
                     select.appendChild(opt);
                 });
                 const newOpt = document.createElement('option');
-                newOpt.value = 'new'; newOpt.textContent = '➕ مشروع جديد';
+                newOpt.value = 'new'; newOpt.textContent = '➕ إنشاء مشروع جديد';
                 select.appendChild(newOpt);
 
                 document.getElementById('projectModal').style.display = 'flex';
@@ -211,7 +322,6 @@
 
         document.getElementById('closeTypeModal').addEventListener('click', () => document.getElementById('typeModal').style.display = 'none');
 
-        // مشروع
         document.getElementById('projectSelect').addEventListener('change', function() {
             document.getElementById('newProjectGroup').style.display = this.value === 'new' ? 'block' : 'none';
         });
@@ -219,7 +329,7 @@
         document.getElementById('confirmProjectBtn').addEventListener('click', () => {
             let project = document.getElementById('projectSelect').value;
             if (project === 'new') project = document.getElementById('newProjectName').value.trim();
-            if (!project) return alert('يلزم اختيار أو إنشاء مشروع');
+            if (!project) return alert('يلزم اختيار أو إنشاء مشروع للبدء');
 
             const newCreation = {
                 id: Date.now().toString(),
@@ -228,27 +338,32 @@
                 title: 'عنوان جديد',
                 content: '',
                 status: 'draft',
-                createdAt: new Date().toISOString()
+                createdAt: new Date().toLocaleDateString('ar-EG')
             };
 
-            creations.unshift(newCreation);
-            saveAll();
+            // حفظ للفايربيس عند الإنشاء
+            saveToFirebase(newCreation);
+            
             document.getElementById('projectModal').style.display = 'none';
             openEditor(newCreation);
         });
 
         document.getElementById('cancelProjectBtn').addEventListener('click', () => document.getElementById('projectModal').style.display = 'none');
 
+        // ==========================================
+        // 6. تشغيل المحرر وإنهائه
+        // ==========================================
         function openEditor(creation) {
             currentId = creation.id;
+            document.getElementById('app-header').style.display = 'none';
             document.getElementById('editorContainer').style.display = 'block';
+            
             document.getElementById('editableTitle').value = creation.title;
             document.getElementById('contentArea').innerHTML = creation.content || '';
+            updateWordCount();
 
-            // حفظ تلقائي
             const titleInput = document.getElementById('editableTitle');
             const contentArea = document.getElementById('contentArea');
-            
             titleInput.oninput = autoSave;
             contentArea.oninput = autoSave;
             contentArea.onkeyup = autoSave;
@@ -257,27 +372,90 @@
         document.getElementById('completeBtn').addEventListener('click', () => {
             if (currentId) {
                 const item = creations.find(c => c.id === currentId);
-                if (item) item.status = 'completed';
-                saveAll();
-                alert('✅ تم إنهاء التأليف بنجاح!');
+                if (item) {
+                    item.status = 'completed';
+                    saveToFirebase(item);
+                }
+                alert('✅ تم حفظ وإنهاء التأليف بنجاح في السحابة!');
                 document.getElementById('editorContainer').style.display = 'none';
+                document.getElementById('app-header').style.display = 'flex';
                 currentId = null;
             }
         });
 
         document.getElementById('backToHomeBtn').addEventListener('click', () => {
             document.getElementById('editorContainer').style.display = 'none';
+            document.getElementById('app-header').style.display = 'flex';
             currentId = null;
         });
 
-        // مكتبتي (بسيطة حالياً)
+        // تصدير كملف نصي
+        document.getElementById('exportBtn').addEventListener('click', () => {
+            const title = document.getElementById('editableTitle').value.trim() || 'تأليف_بدون_عنوان';
+            const content = document.getElementById('contentArea').innerText;
+            if(!content.trim()) return alert('النص فارغ، لا يوجد شيء لتصديره!');
+            const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = `${title}.txt`;
+            link.click();
+        });
+
+        // ==========================================
+        // 7. عرض مكتبة السحابة
+        // ==========================================
         document.getElementById('libraryBtn').addEventListener('click', () => {
-            const container = document.getElementById('libraryContent');
-            container.innerHTML = '<p style="text-align:center; padding:40px; color:#666;">مكتبتي قيد التطوير المتقدم... سيتم عرض كل المشاريع والأعمال هنا قريباً</p>';
+            renderLibrary();
             document.getElementById('libraryModal').style.display = 'flex';
         });
 
         document.getElementById('closeLibraryBtn').addEventListener('click', () => document.getElementById('libraryModal').style.display = 'none');
+
+        function renderLibrary() {
+            const container = document.getElementById('libraryContent');
+            container.innerHTML = '';
+
+            if (creations.length === 0) {
+                container.innerHTML = '<div class="empty-lib">📭 المكتبة السحابية فارغة حالياً. ابدأ تأليف عملك الأول!</div>';
+                return;
+            }
+
+            creations.forEach(item => {
+                const typeIcon = item.type === 'song' ? '🎵 أغنية' : item.type === 'play' ? '🎭 مسرحية' : '✍️ نص حر';
+                const statusText = item.status === 'completed' ? '✅ مكتمل' : '✏️ مسودة';
+                
+                const card = document.createElement('div');
+                card.className = 'lib-card';
+                card.innerHTML = `
+                    <div class="lib-info">
+                        <h3>${item.title}</h3>
+                        <p>📁 المشروع: <b>${item.project}</b></p>
+                        <span class="lib-badge">${typeIcon}</span>
+                        <span class="lib-badge">${item.createdAt}</span>
+                        <span class="lib-badge" style="background:#e3f2fd; color:#0275d8;">${statusText}</span>
+                    </div>
+                    <div class="lib-actions">
+                        <button class="btn-open" onclick="loadFromLibrary('${item.id}')">فتح</button>
+                        <button class="btn-delete" onclick="deleteFromLibrary('${item.id}')">حذف</button>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        window.loadFromLibrary = function(id) {
+            const item = creations.find(c => c.id === id);
+            if (item) {
+                document.getElementById('libraryModal').style.display = 'none';
+                openEditor(item);
+            }
+        };
+
+        window.deleteFromLibrary = function(id) {
+            if (confirm('⚠️ هل أنت متأكد من حذف هذا العمل نهائياً من السحابة؟')) {
+                deleteFromFirebase(id);
+            }
+        };
     </script>
 </body>
 </html>
